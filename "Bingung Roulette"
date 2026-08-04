@@ -1,0 +1,281 @@
+import React, { useState, useRef } from 'react';
+
+// Data Default
+const DEFAULT_DATA = {
+  film: {
+    'Semua Genre': ['Inception 🌀', 'Avengers 🦸‍♂️', 'Parasite 🏠', 'Joker 🤡', 'Interstellar 🚀'],
+    'Aksi': ['Die Hard 💥', 'John Wick 🔫', 'Mad Max 🚗', 'The Dark Knight 🦇'],
+    'Komedi': ['Superbad 🤣', 'The Hangover 🍻', 'Dumb & Dumber 🤪', 'Mr. Bean 😂'],
+    'Horor': ['The Conjuring 👻', 'Get Out 👁️', 'Hereditary 🕯️', 'Insidious 🚪']
+  },
+  makanan: {
+    'Bebas': ['Nasi Goreng 🍳', 'Pizza 🍕', 'Burger 🍔', 'Sushi 🍣', 'Salad 🥗'],
+    'Pedas': ['Seblak 🌶️', 'Ayam Geprek 🍗', 'Mie Gacoan 🍜', 'Richeese 🧀'],
+    'Manis': ['Martabak 🥞', 'Es Krim 🍦', 'Donat 🍩', 'Pancake 🍯'],
+    'Berkuah': ['Bakso 🍲', 'Soto 🍜', 'Ramen 🍜', 'Sop Buntut 🥘']
+  }
+};
+
+const COLORS = [
+  '#FF9AA2', '#FFB7B2', '#FFDAC1', '#E2F0CB', '#B5EAD7', '#C7CEEA', '#F1CBFF'
+];
+
+export default function BingungRoulette() {
+  const [mode, setMode] = useState('makanan'); // 'film' | 'makanan'
+  const [category, setCategory] = useState(Object.keys(DEFAULT_DATA['makanan'])[0]);
+  
+  const [useCustom, setUseCustom] = useState(false);
+  const [customItems, setCustomItems] = useState(['Opsi 1 🎯', 'Opsi 2 🎲', 'Opsi 3 🧩']);
+  const [newCustomItem, setNewCustomItem] = useState('');
+
+  const [isSpinning, setIsSpinning] = useState(false);
+  const [rotation, setRotation] = useState(0);
+  const [result, setResult] = useState(null);
+  const [history, setHistory] = useState([]);
+
+  // Ambil daftar yang sedang aktif
+  const currentItems = useCustom 
+    ? customItems 
+    : DEFAULT_DATA[mode][category];
+
+  // Fungsi mengganti mode (reset kategori)
+  const handleModeChange = (newMode) => {
+    setMode(newMode);
+    setCategory(Object.keys(DEFAULT_DATA[newMode])[0]);
+    setResult(null);
+  };
+
+  // Tambah opsi custom
+  const addCustomItem = (e) => {
+    e.preventDefault();
+    if (newCustomItem.trim() && customItems.length < 12) {
+      setCustomItems([...customItems, newCustomItem.trim()]);
+      setNewCustomItem('');
+    }
+  };
+
+  // Hapus opsi custom
+  const removeCustomItem = (index) => {
+    setCustomItems(customItems.filter((_, i) => i !== index));
+  };
+
+  // Logika Spin Roulette
+  const spinWheel = () => {
+    if (isSpinning || currentItems.length < 2) return;
+    
+    setIsSpinning(true);
+    setResult(null);
+
+    const extraSpins = 5; // Putaran tambahan agar seru
+    const randomDegrees = Math.floor(Math.random() * 360);
+    const totalRotation = rotation + (extraSpins * 360) + randomDegrees;
+    
+    setRotation(totalRotation);
+
+    // Kalkulasi hasil setelah animasi selesai
+    setTimeout(() => {
+      const finalAngle = totalRotation % 360;
+      const sliceAngle = 360 / currentItems.length;
+      
+      // Karena pointer ada di atas (0 derajat), kita hitung mundur
+      const pointerAngle = (360 - finalAngle) % 360;
+      const winningIndex = Math.floor(pointerAngle / sliceAngle);
+      const winner = currentItems[winningIndex];
+
+      setResult(winner);
+      setHistory(prev => [winner, ...prev].slice(0, 5));
+      setIsSpinning(false);
+    }, 4000); // Sesuai dengan durasi CSS transition
+  };
+
+  // Bikin gradient untuk wheel
+  const sliceAngle = 360 / Math.max(currentItems.length, 1);
+  const conicString = currentItems.map((_, i) => {
+    const color = COLORS[i % COLORS.length];
+    return `${color} ${i * sliceAngle}deg ${(i + 1) * sliceAngle}deg`;
+  }).join(', ');
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 py-10 px-4 font-sans text-gray-800">
+      <div className="max-w-4xl mx-auto space-y-8">
+        
+        {/* Header */}
+        <div className="text-center space-y-2 text-white">
+          <h1 className="text-4xl md:text-5xl font-black tracking-tight drop-shadow-md">
+            🎡 Bingung Roulette
+          </h1>
+          <p className="text-lg font-medium opacity-90">
+            Biar takdir yang milih kamu mau makan atau nonton apa!
+          </p>
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-8">
+          
+          {/* KIRI: Pengaturan */}
+          <div className="bg-white/95 backdrop-blur-sm p-6 rounded-3xl shadow-xl space-y-6 border border-white/20">
+            
+            {/* Toggle Mode */}
+            <div className="flex bg-gray-100 p-1 rounded-xl">
+              <button 
+                onClick={() => handleModeChange('makanan')}
+                className={`flex-1 py-2 rounded-lg font-bold transition-all ${mode === 'makanan' ? 'bg-white shadow text-pink-500' : 'text-gray-500 hover:text-gray-700'}`}
+              >
+                🍔 Makan Apa?
+              </button>
+              <button 
+                onClick={() => handleModeChange('film')}
+                className={`flex-1 py-2 rounded-lg font-bold transition-all ${mode === 'film' ? 'bg-white shadow text-indigo-500' : 'text-gray-500 hover:text-gray-700'}`}
+              >
+                🎬 Nonton Apa?
+              </button>
+            </div>
+
+            {/* Toggle Data Source */}
+            <div className="flex items-center justify-between">
+              <span className="font-semibold text-gray-700">Gunakan Daftar Sendiri?</span>
+              <button 
+                onClick={() => setUseCustom(!useCustom)}
+                className={`w-12 h-6 rounded-full transition-colors relative ${useCustom ? 'bg-green-400' : 'bg-gray-300'}`}
+              >
+                <div className={`w-4 h-4 bg-white rounded-full absolute top-1 transition-transform ${useCustom ? 'translate-x-7' : 'translate-x-1'}`} />
+              </button>
+            </div>
+
+            {/* Input Data */}
+            {!useCustom ? (
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-gray-500 uppercase tracking-wider">Pilih Kategori</label>
+                <div className="flex flex-wrap gap-2">
+                  {Object.keys(DEFAULT_DATA[mode]).map(cat => (
+                    <button
+                      key={cat}
+                      onClick={() => setCategory(cat)}
+                      className={`px-4 py-2 rounded-full text-sm font-semibold transition-all ${category === cat ? 'bg-purple-500 text-white shadow-md' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                    >
+                      {cat}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <form onSubmit={addCustomItem} className="flex gap-2">
+                  <input 
+                    type="text" 
+                    value={newCustomItem}
+                    onChange={(e) => setNewCustomItem(e.target.value)}
+                    placeholder="Ketik lalu Enter..." 
+                    className="flex-1 px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-400 focus:outline-none"
+                  />
+                  <button type="submit" className="px-4 py-2 bg-purple-500 text-white font-bold rounded-xl hover:bg-purple-600">
+                    + Tambah
+                  </button>
+                </form>
+                <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto p-2 bg-gray-50 rounded-xl border border-gray-100">
+                  {customItems.length === 0 && <span className="text-gray-400 text-sm">Belum ada daftar. Tambahkan maksimal 12.</span>}
+                  {customItems.map((item, idx) => (
+                    <div key={idx} className="flex items-center gap-2 bg-white px-3 py-1 rounded-full shadow-sm text-sm border border-gray-100">
+                      <span className="font-medium">{item}</span>
+                      <button onClick={() => removeCustomItem(idx)} className="text-red-400 hover:text-red-600 font-bold">×</button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Riwayat */}
+            {history.length > 0 && (
+              <div className="pt-4 border-t border-gray-100">
+                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Riwayat Terakhir</h3>
+                <div className="flex flex-wrap gap-2">
+                  {history.map((h, i) => (
+                    <span key={i} className={`text-xs px-2 py-1 rounded-md font-medium ${i === 0 ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-500'}`}>
+                      {h}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* KANAN: Roda Roulette */}
+          <div className="flex flex-col items-center justify-center space-y-8">
+            
+            {/* Wheel Container */}
+            <div className="relative w-72 h-72 md:w-80 md:h-80 drop-shadow-2xl">
+              {/* Pointer Segitiga di atas */}
+              <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[16px] border-l-transparent border-r-[16px] border-r-transparent border-t-[24px] border-t-white z-20 drop-shadow-md" />
+              
+              {/* Roda */}
+              <div 
+                className="w-full h-full rounded-full border-8 border-white overflow-hidden relative transition-transform"
+                style={{ 
+                  background: `conic-gradient(${conicString})`,
+                  transform: `rotate(${rotation}deg)`,
+                  transitionDuration: isSpinning ? '4s' : '0s',
+                  transitionTimingFunction: 'cubic-bezier(0.175, 0.885, 0.32, 1.275)' // Efek bouncy
+                }}
+              >
+                {/* Teks di dalam roda */}
+                {currentItems.map((item, i) => {
+                  const angle = (i * sliceAngle) + (sliceAngle / 2);
+                  return (
+                    <div 
+                      key={i} 
+                      className="absolute inset-0 flex items-center justify-center pointer-events-none"
+                    >
+                      <div 
+                        style={{
+                          transform: `rotate(${angle - 90}deg) translateX(90px) md:translateX(110px)`,
+                          transformOrigin: 'center'
+                        }}
+                        className="font-bold text-gray-800 text-sm max-w-[90px] truncate"
+                      >
+                        {item}
+                      </div>
+                    </div>
+                  );
+                })}
+                {/* Lingkaran tengah */}
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 bg-white rounded-full shadow-inner z-10" />
+              </div>
+            </div>
+
+            {/* Tombol Spin */}
+            <button 
+              onClick={spinWheel}
+              disabled={isSpinning || currentItems.length < 2}
+              className={`w-full max-w-xs py-4 rounded-2xl text-2xl font-black text-white uppercase tracking-widest shadow-[0_8px_0_rgb(126,34,206)] hover:shadow-[0_4px_0_rgb(126,34,206)] hover:translate-y-1 transition-all
+                ${isSpinning || currentItems.length < 2 ? 'bg-gray-400 shadow-none hover:translate-y-0 cursor-not-allowed' : 'bg-purple-500 hover:bg-purple-600 active:shadow-none active:translate-y-2'}`}
+            >
+              {isSpinning ? 'Muter...' : 'SPIN! 🎰'}
+            </button>
+
+          </div>
+        </div>
+      </div>
+
+      {/* Modal Hasil */}
+      {result && !isSpinning && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-white rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl scale-100 transform transition-all relative overflow-hidden">
+            <div className="absolute -top-10 -left-10 w-32 h-32 bg-pink-200 rounded-full blur-3xl opacity-50" />
+            <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-purple-200 rounded-full blur-3xl opacity-50" />
+            
+            <h3 className="text-gray-500 font-bold uppercase tracking-widest text-sm mb-4">Kamu Harus Pilih:</h3>
+            <div className="text-4xl md:text-5xl font-black text-gray-800 mb-8 animate-bounce mt-4">
+              {result}
+            </div>
+            
+            <button 
+              onClick={() => setResult(null)}
+              className="w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold rounded-xl transition-colors"
+            >
+              Tutup & Putar Lagi
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
